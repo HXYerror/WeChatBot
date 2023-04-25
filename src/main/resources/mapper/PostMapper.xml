@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="top.hxyac.board.mapper.PostMapper">
+
+    <insert id="insertPostSql" parameterType="Post" useGeneratedKeys="true" keyProperty="postId">
+        INSERT INTO board.t_post(post_id,post_uuid, post_topic_id, post_user_uuid, post_img, post_title, post_content, post_create_time, post_edit_time)
+            VALUE (#{postId,jdbcType=INTEGER},#{postUuid,jdbcType=VARCHAR},#{postTopicId,jdbcType=INTEGER},#{postUserUuid,jdbcType=VARCHAR},#{postImg,jdbcType=VARCHAR},#{postTitle,jdbcType=VARCHAR},#{postContent,jdbcType=VARCHAR},#{postCreateTime,jdbcType=INTEGER},#{postEditTime,jdbcType=INTEGER});
+    </insert>
+    <update id="updatePostDisableSql">
+        UPDATE board.t_post SET post_disable = 3  WHERE post_uuid =  #{post_uuid};
+    </update>
+    <update id="updatePostCheckResuleSql">
+        UPDATE board.t_post SET post_disable = #{check_result} WHERE post_uuid =  #{post_uuid};
+    </update>
+    <update id="updatePostLikeSql">
+        UPDATE board.t_post SET post_like = post_like + 1  WHERE post_uuid =  #{post_uuid};
+    </update>
+    <update id="updatePostDislikeSql">
+        UPDATE board.t_post SET post_dislike = post_dislike + 1  WHERE post_uuid =  #{post_uuid};
+    </update>
+    <update id="updatePostClickSql">
+        UPDATE board.t_post SET post_click = post_click + 1  WHERE post_uuid =  #{post_uuid};
+    </update>
+    <update id="updatePostAnswerSql">
+        UPDATE board.t_post SET post_answer_number = post_answer_number + 1  WHERE post_uuid =  #{post_uuid};
+    </update>
+
+    <resultMap id="PostDetailResultMap" type="top.hxyac.chatbot.vo.response.PostShowResponse">
+        <result column="post_uuid" jdbcType="CHAR" property="postUuid"/>
+        <result column="post_user_uuid" jdbcType="CHAR" property="postUserUuid"/>
+        <result column="user_img" jdbcType="VARCHAR" property="userImg"/>
+        <result column="user_name" jdbcType="VARCHAR" property="userName"/>
+        <result column="post_img" jdbcType="VARCHAR" property="postImg"/>
+        <result column="post_title" jdbcType="VARCHAR" property="postTitle"/>
+        <result column="post_content" jdbcType="VARCHAR" property="postContent"/>
+        <result column="post_topic_id" jdbcType="INTEGER" property="postTopicId"/>
+        <result column="topic_name" jdbcType="VARCHAR" property="topicName"/>
+        <result column="post_like" jdbcType="INTEGER" property="postLike"/>
+        <result column="post_dislike" jdbcType="INTEGER" property="postDislike"/>
+        <result column="post_click" jdbcType="INTEGER" property="postClick"/>
+        <result column="post_answer_number" jdbcType="INTEGER" property="postAnswerNumber"/>
+        <result column="post_create_time" jdbcType="BIGINT" property="postCreateTime"/>
+    </resultMap>
+
+    <select id="selectPostByUuidSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE P.post_disable = 0 AND P.post_uuid = #{post_uuid};
+    </select>
+
+    <select id="selectPostUserByuuidSql" resultType="java.lang.String">
+        SELECT post_user_uuid FROM board.t_post WHERE post_uuid = #{post_uuid};
+    </select>
+
+    <select id="selectFailPostByUserSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_user_uuid = #{user_uuid} AND post_disable in (1,2,3)
+        ORDER BY post_create_time DESC;
+    </select>
+
+    <select id="selectSuccessPostByUserSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_user_uuid = #{user_uuid} AND post_disable = 0
+        ORDER BY post_create_time DESC;
+    </select>
+
+    <select id="selectPostByTopicSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_topic_id = #{topic_id} AND post_disable = 0
+        ORDER BY post_create_time DESC;
+
+    </select>
+
+    <select id="selectTopPostSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_disable = 0
+        ORDER BY post_click DESC
+        LIMIT 3;
+    </select>
+
+    <select id="selectNewPostSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_disable = 0
+        ORDER BY post_create_time DESC;
+    </select>
+
+    <select id="selectAllPostSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+            LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+            LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_disable = 0;
+    </select>
+
+    <select id="selectLimitPostSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_id > #{limitId} AND post_disable = 0;
+    </select>
+
+    <select id="selectUncheckPostSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE post_disable = 1;
+    </select>
+    <select id="selectPostContentTitleSql" resultMap="PostDetailResultMap">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+        WHERE post_disable = 0;
+    </select>
+
+    <select id="selectCheckPostByUuidSql" resultType="top.hxyac.chatbot.vo.response.PostShowResponse">
+        SELECT P.post_topic_id,P.post_user_uuid,P.post_uuid,P.post_answer_number,P.post_content,P.post_title,P.post_img,P.post_create_time,P.post_dislike,P.post_like,P.post_click,P.post_disable,U.user_name,U.user_img,T.topic_name
+        FROM board.t_post AS P
+                 LEFT JOIN board.t_user AS U ON P.post_user_uuid = U.user_uuid
+                 LEFT JOIN board.t_topic AS T ON P.post_topic_id = T.topic_number
+        WHERE P.post_disable = 1 AND P.post_uuid = #{post_uuid};
+    </select>
+
+</mapper>

@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "wx.mp.configs.appId",
+      "type": "java.lang.String",
+      "description": "Description for wx.mp.configs.appId."
+  }
+] }
