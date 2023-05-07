@@ -64,7 +64,7 @@ public class ChatController {
                        @RequestParam("timestamp") String timestamp,
                        @RequestParam("nonce") String nonce,
                        @RequestParam(name = "encrypt_type", required = false) String encType,
-                       @RequestParam(name = "msg_signature", required = false) String msgSignature) {
+                       @RequestParam(name = "msg_signature", required = false) String msgSignature) throws InterruptedException {
         logger.info("from wechat message - [signature=[{}], encType=[{}], msgSignature=[{}],"
                         + " timestamp=[{}], nonce=[{}], requestBody=[\n{}\n] ",
                 signature, encType, msgSignature, timestamp, nonce, requestBody);
@@ -84,9 +84,9 @@ public class ChatController {
             // no encrypte
             WxMpXmlMessage inMessage = WxMpXmlMessage.fromXml(requestBody);
             WxMpXmlOutMessage outMessage = this.route(inMessage);
-            System.out.println(outMessage);
+
             if (outMessage == null) {
-                return "";
+                outMessage = chatService.getDuplicateMessage(inMessage);
             }
 
             out = outMessage.toXml();
@@ -97,13 +97,11 @@ public class ChatController {
             logger.debug("request decrypted-{} ", inMessage.toString());
             WxMpXmlOutMessage outMessage = this.route(inMessage);
             if (outMessage == null) {
-                return "";
+                outMessage = chatService.getDuplicateMessage(inMessage);
             }
-
             out = outMessage.toEncryptedXml(wxService.getWxMpConfigStorage());
         }
-
-        logger.debug("response{}", out);
+        logger.info("response{}", out);
         return out;
     }
 

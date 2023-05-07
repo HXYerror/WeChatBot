@@ -7,7 +7,8 @@ package top.hxyac.chatbot.utils;
 public enum ResultEnum {
 
     SUCCESS(0, "success"),
-    UNKNOWN_ERROR(1000, "未知错误"),
+    UNKNOWN_ERROR(1,"未知错误"),
+    DUPLICATE_ERROR(1000, "重复消息获取错误"),
     MYSQL_ERROR(1001,"数据库错误"),
     USER_NOT_LOGIN(2000, "该用户未登录"),
     USER_NOT_INFO(2001, "该用户未授权"),

@@ -27,6 +27,7 @@ public class MsgHandler extends BaseLogHandler {
                                     Map<String, Object> context, WxMpService weixinService,
                                     WxSessionManager sessionManager) {
 
+        logger.info("getmessage");
         if ("我的信息".equals(wxMessage.getContent())) {
             String text = "user：" + wxMessage.getFromUser() + "\n" +
                     "times：" + dataMap.get(wxMessage.getFromUser());
@@ -36,9 +37,9 @@ public class MsgHandler extends BaseLogHandler {
             return m;
         }
 
-        Gpt35Response responseMessage = chatService.getMessage(wxMessage.getFromUser(),wxMessage.getFromUser(),wxMessage.getContent());
+        String responseMessage = chatService.getMessage(wxMessage.getFromUser(),wxMessage.getMsgId().toString(),wxMessage.getFromUser(),wxMessage.getContent());
 
-        WxMpXmlOutTextMessage m = WxMpXmlOutMessage.TEXT().content(responseMessage.getChoices().get(0).getMessage().getContent())
+        WxMpXmlOutTextMessage m = WxMpXmlOutMessage.TEXT().content(responseMessage)
                 .fromUser(wxMessage.getToUser()).toUser(wxMessage.getFromUser())
                 .build();
         return m;
