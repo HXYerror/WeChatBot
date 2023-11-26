@@ -105,6 +105,10 @@ public class ChatController {
         return out;
     }
 
+    @GetMapping({"test/message"})
+    public JsonData getMessage(@RequestParam(name = "uuid",required = false) String uuid) {
+        return JsonData.buildSuccess(this.chatService.testGetMessage(uuid));
+    }
     private WxMpXmlOutMessage route(WxMpXmlMessage message) {
         try {
             return this.messageRouter.route(message);
