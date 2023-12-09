@@ -16,7 +16,7 @@ import top.hxyac.chatbot.interceptor.*;
  *  不需要权限 /api/v1/pub/
  */
 
-//@Configuration
+@Configuration
 public class InterceptorConfig implements WebMvcConfigurer {
 
     @Autowired
@@ -43,8 +43,9 @@ public class InterceptorConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
 //        registry.addInterceptor(corsInterceptor()).addPathPatterns("/**");
 //        registry.addInterceptor(uuidInterceptor()).addPathPatterns("/**");
-//        registry.addInterceptor(loginInterceptor()).addPathPatterns("/api/v1/pri/*/*/**")
-//                .excludePathPatterns("/api/v1/pri/user/code")
+          registry.addInterceptor(loginInterceptor()).addPathPatterns("/api/v1/pri/*/*/**")
+                    .excludePathPatterns("/api/v1/pri/user/login")
+                  .excludePathPatterns("/api/v1/pri/user/register");
 //                .excludePathPatterns("/api/v1/pri/topic/all")
 //                .excludePathPatterns("/api/v1/pri/answer/get_post")
 //                .excludePathPatterns("/api/v1/pri/post/new")

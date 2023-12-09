@@ -1,8 +1,10 @@
 package top.hxyac.chatbot.utils;
 
+import org.springframework.data.mongodb.core.aggregation.ConditionalOperators;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import top.hxyac.chatbot.config.StaticValue;
+import top.hxyac.chatbot.model.GPTVersion;
 import top.hxyac.chatbot.vo.azure.Gpt35Request;
 import top.hxyac.chatbot.vo.azure.Gpt35Response;
 import top.hxyac.chatbot.vo.wechat.AccessToken;
@@ -30,8 +32,6 @@ public class RequestUtils {
 
     public static final String WECHAT_CHECK_MSG = "https://api.weixin.qq.com/wxa/msg_sec_check?access_token={access_token}";
 
-    public static final String AZURE_OPEN_AI_GPT35 = "https://hxy-chat-bot.openai.azure.com/openai/deployments/gpt35/chat/completions?api-version=2023-03-15-preview";
-
     public static final String WECHAT_HXY_OPENID = "oA_Pk4qIyBlK0TXmb2zSZUeR5s9o";
 
     private final static Logger logger = LoggerFactory.getLogger(RequestUtils.class);
@@ -39,6 +39,18 @@ public class RequestUtils {
     private final  static  String wechatKey = "wechatGet_";
 
     private final static String AZURE_API_KEY = "api-key";
+
+    private static String AZURE_OPEN_AI_GPT35;
+    private static String AZURE_OPEN_AI_GPT4;
+    @Value("${hxyac.azure_gpt35}")
+    public void setAZURE_OPEN_AI_GPT35(String SECRET) {
+        RequestUtils.AZURE_OPEN_AI_GPT35 = SECRET;
+    }
+
+    @Value("${hxyac.azure_gpt40}")
+    public void setAZURE_OPEN_AI_GPT40(String SECRET) {
+        RequestUtils.AZURE_OPEN_AI_GPT4 = SECRET;
+    }
 
     //@Value("${hxyac.wechat.appid}")
     private String  APPID;
@@ -49,6 +61,9 @@ public class RequestUtils {
     @Value("${hxyac.azure.secret}")
     private String AZURE_SECRET;
 
+    @Value("${hxyac.azure.gpt4.secret}")
+    private String AZURE_GPT4_SECRET;
+
     @Autowired
     private RedisUtils redisUtil;
 
@@ -58,7 +73,7 @@ public class RequestUtils {
      * @param uuid
      * @return NULL or Gpt35Response if response is 200
      */
-    public Gpt35Response getMessageFromAzureGPT35(Gpt35Request gpt35Request, String uuid){
+    public Gpt35Response getMessageFromAzureGPT35(Gpt35Request gpt35Request, GPTVersion version, String uuid){
 
         RestTemplate restTemplate = new RestTemplate();
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
@@ -71,14 +86,30 @@ public class RequestUtils {
 
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set(AZURE_API_KEY,AZURE_SECRET);
+        String RequestURL = AZURE_OPEN_AI_GPT35;
+        String secret = AZURE_SECRET;
+        switch (version){
+            case GPT35:
+                RequestURL = AZURE_OPEN_AI_GPT35;
+                secret = AZURE_SECRET;
+                break;
+            case GPT40:
+                RequestURL = AZURE_OPEN_AI_GPT4;
+                secret = AZURE_GPT4_SECRET;
+                break;
+        }
+
+
+        headers.set(AZURE_API_KEY,secret);
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity request = new HttpEntity<>(gpt35Request,headers);
 
         logger.info(gpt35Request.toString());
 
+
+
         try{
-            response = restTemplate.postForEntity(AZURE_OPEN_AI_GPT35,request,Gpt35Response.class,params);
+            response = restTemplate.postForEntity(RequestURL,request,Gpt35Response.class,params);
         }catch (Exception e){
             logger.warn("postForEntity:["+uuid+"]"+" request chat from azure exception:"+e);
             return null;

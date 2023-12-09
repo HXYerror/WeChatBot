@@ -7,7 +7,6 @@ import java.util.List;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutMessage;
 import me.chanjar.weixin.mp.bean.message.WxMpXmlOutTextMessage;
-import me.chanjar.weixin.mp.builder.outxml.TextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +18,11 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import top.hxyac.chatbot.exception.CustomException;
 import top.hxyac.chatbot.mapper.ChatMapper;
+import top.hxyac.chatbot.model.GPTVersion;
 import top.hxyac.chatbot.model.entity.Chat;
+import top.hxyac.chatbot.model.entity.FlutterMessage;
 import top.hxyac.chatbot.model.entity.MMessage;
+import top.hxyac.chatbot.vo.request.promptMessage;
 import top.hxyac.chatbot.service.ChatService;
 import top.hxyac.chatbot.utils.CommonUtils;
 import top.hxyac.chatbot.utils.RedisUtils;
@@ -45,10 +47,14 @@ public class ChatServiceImpl implements ChatService {
 
     private final MongoTemplate mongoTemplate;
     private final String collectionName = "official_history";
+
     @Value("${hxyac.history.num}")
     private int historyNum;
     @Value("${hxyac.toekn.max}")
     private int tokenMax;
+
+    @Value("${hxyac.toekn.flutter}")
+    private int flutterMax;
 
     private final static Logger logger = LoggerFactory.getLogger(ChatServiceImpl.class);
 
@@ -62,17 +68,17 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public Integer saveChat(ChatRequest chatRequest, String uuid) {
         Integer result = 0;
-        try{
-            Chat chat = new Chat();
-            chat.setChatContent(chatRequest.getChatContent());
-            chat.setChatReceiveUuid(chatRequest.getChatReceiveUuid());
-            chat.setChatSendUuid(chatRequest.getChatSendUuid());
-            chat.setChatTime(System.currentTimeMillis());
-            chat.setChatUuid(CommonUtils.UUID());
-            result = chatMapper.insertChatSql(chat);
-        }catch (Exception e){
-            throw  new CustomException(ResultEnum.MYSQL_ERROR.getCode(),e.getMessage() == null ? e.toString() : e.getMessage(),uuid);
-        }
+//        try{
+//            Chat chat = new Chat();
+//            chat.setChatContent(chatRequest.getChatContent());
+//            chat.setChatReceiveUuid(chatRequest.getChatReceiveUuid());
+//            chat.setChatSendUuid(chatRequest.getChatSendUuid());
+//            chat.setChatTime(System.currentTimeMillis());
+//            chat.setChatUuid(CommonUtils.UUID());
+//            result = chatMapper.insertChatSql(chat);
+//        }catch (Exception e){
+//            throw  new CustomException(ResultEnum.MYSQL_ERROR.getCode(),e.getMessage() == null ? e.toString() : e.getMessage(),uuid);
+//        }
         return result;
     }
 
@@ -103,7 +109,7 @@ public class ChatServiceImpl implements ChatService {
             gpt35Request.setFrequency_penalty(0);
             gpt35Request.setTop_p(0.8);
             gpt35Request.setTemperature(0.5);
-            Gpt35Response gpt35Response = this.requestUtils.getMessageFromAzureGPT35(gpt35Request, uuid);
+            Gpt35Response gpt35Response = this.requestUtils.getMessageFromAzureGPT35(gpt35Request, GPTVersion.GPT35 , uuid);
             this.redisUtils.set(this.redisUtils.prefix + wechatId + "_" + messageId, ((Gpt35RespChoices)gpt35Response.getChoices().get(0)).getMessage().getContent(), this.redisUtils.redisDb);
             this.redisUtils.expire(this.redisUtils.prefix + wechatId + "_" + messageId, 30L, this.redisUtils.redisDb);
             MMessage mMessage = new MMessage();
@@ -159,6 +165,54 @@ public class ChatServiceImpl implements ChatService {
                 .build();
         return m;
     }
+    @Override
+    public String getGPTMessage(String userUUID, String chatUUID, promptMessage requestMessage, GPTVersion version) {
+        long startTime = System.currentTimeMillis();
+
+            Gpt35Request gpt35Request = new Gpt35Request();
+            List<Gpt35Message> gpt35MessageList = new ArrayList();
+            Gpt35Message gpt35Message1 = new Gpt35Message("system", "You are an AI assistant that helps people find information.");
+            gpt35MessageList.add(gpt35Message1);
+
+            ArrayList<FlutterMessage> historyMessageList = (ArrayList)this.findUserChatHistory(userUUID,chatUUID,10);
+            Collections.reverse(historyMessageList);
+
+            //need calculate token
+            historyMessageList.forEach((item) -> {
+                gpt35MessageList.add(item.getUserMessage());
+                gpt35MessageList.add(item.getBotMessage());
+            });
+
+            Gpt35Message gpt35Message2 = new Gpt35Message("user", requestMessage.getPromptMessage());
+            gpt35MessageList.add(gpt35Message2);
+            gpt35Request.setGpt35Message(gpt35MessageList);
+            gpt35Request.setFrequency_penalty(0);
+            gpt35Request.setMax_tokens(this.flutterMax);
+            gpt35Request.setFrequency_penalty(0);
+            gpt35Request.setTop_p(0.8);
+            gpt35Request.setTemperature(0.5);
+
+            Gpt35Response gpt35Response = this.requestUtils.getMessageFromAzureGPT35(gpt35Request, GPTVersion.GPT40 ,userUUID);
+            FlutterMessage flutterMessage = new FlutterMessage();
+            flutterMessage.setBotMessage(((Gpt35RespChoices)gpt35Response.getChoices().get(0)).getMessage());
+            flutterMessage.setUserMessage(gpt35Message2);
+            flutterMessage.setCreateTime(gpt35Response.getCreated());
+            flutterMessage.setGpt35RespUsage(gpt35Response.getUsage());
+            flutterMessage.setStopReason(((Gpt35RespChoices)gpt35Response.getChoices().get(0)).getFinish_reason());
+            flutterMessage.setChatUUID(chatUUID);
+            flutterMessage.setUserUUID(userUUID);
+            flutterMessage.setEnable(true);
+            flutterMessage.setVersion(GPTVersion.GPT40);
+
+            this.mongoTemplate.save(flutterMessage, "flutter_chat_history");
+            long endTime = System.currentTimeMillis();
+            long executionTime = endTime - startTime;
+            logger.warn("chatUUID:" + chatUUID + "\n runTime:" + executionTime);
+            return ((Gpt35RespChoices)gpt35Response.getChoices().get(0)).getMessage().getContent();
+
+    }
+
+
 
     public List<MMessage> testGetMessage(String uuid) {
         return this.findLatest20Records(uuid);
@@ -170,5 +224,14 @@ public class ChatServiceImpl implements ChatService {
         query.with(Sort.by(Direction.DESC, new String[]{"createTime"}));
         query.limit(this.historyNum);
         return this.mongoTemplate.find(query, MMessage.class, "official_history");
+    }
+
+    public List<FlutterMessage> findUserChatHistory(String userUUID, String chatUUID, Integer count) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("userUUID").is(userUUID));
+        query.addCriteria(Criteria.where("chatUUID").is(chatUUID));
+        query.with(Sort.by(Direction.DESC, new String[]{"createTime"}));
+        query.limit(count);
+        return this.mongoTemplate.find(query, FlutterMessage.class, "flutter_chat_history");
     }
 }

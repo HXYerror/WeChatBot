@@ -43,47 +43,43 @@ public class LoginInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-
-        String uuid = (String) request.getAttribute("hxy-uuid");
+        String uuid = (String) request.getAttribute("userUUID");
         try{
             String accessToken =  request.getHeader("token");
-            if(accessToken == null){
-                accessToken = request.getParameter("token");
-            }
-
             if(StringUtils.isNotBlank(accessToken)){
 
                 Claims claims = JWTUtils.checkJWT(accessToken);
                 if(claims == null){
-                    logger.info("GetInfo:["+uuid+"]"+ ResultEnum.USER_NOT_LOGIN.getMsg());
+                    logger.info("GetInfo:"+ ResultEnum.USER_NOT_LOGIN.getMsg());
                     sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_NOT_LOGIN.getCode(),ResultEnum.USER_NOT_LOGIN.getMsg()));
                     return false;
                 }
 
-                String userUuid = (String)claims.get("userUuid");
-                request.setAttribute("userUuid",userUuid);
+                String userUuid = (String)claims.get("uuid");
+                request.setAttribute("uuid",userUuid);
 
-                Boolean hasToken =  redisUtils.hexists(redisUtils.prefix + RedisUtils.tokenKey,userUuid);
-                if(hasToken){
-                    String nowToken = redisUtils.hget(redisUtils.prefix + RedisUtils.tokenKey,userUuid);
-                    if(!nowToken.equals(accessToken)){
-                        sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_NOT_LOGIN.getCode(),ResultEnum.USER_NOT_LOGIN.getMsg()));
-                        return false;
-                    }
-                }else{
-                    sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_NOT_LOGIN.getCode(),ResultEnum.USER_NOT_LOGIN.getMsg()));
-                    return false;
-                }
-
-                Integer userDisable = (Integer) claims.get("userDisable");
-                Integer userAdmin = (Integer) claims.get("userAdmin");
-                request.setAttribute("userAdmin",userAdmin);
-
-                if(userDisable == null || userDisable.equals(EntityEnum.Disable.getValue())){
-                    logger.info("GetInfo:["+uuid+"]"+ ResultEnum.USER_BAN.getMsg());
-                    sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_BAN.getCode(),ResultEnum.USER_BAN.getMsg()));
-                    return false;
-                }
+//                Boolean hasToken =  redisUtils.hexists(redisUtils.prefix + RedisUtils.tokenKey,userUuid);
+//                if(hasToken){
+//                    String nowToken = redisUtils.hget(redisUtils.prefix + RedisUtils.tokenKey,userUuid);
+//                    if(!nowToken.equals(accessToken)){
+//                        sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_NOT_LOGIN.getCode(),ResultEnum.USER_NOT_LOGIN.getMsg()));
+//                        return false;
+//                    }
+//                }else{
+//                    sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_NOT_LOGIN.getCode(),ResultEnum.USER_NOT_LOGIN.getMsg()));
+//                    return false;
+//                }
+//
+//
+//                Integer userDisable = (Integer) claims.get("userDisable");
+//                Integer userAdmin = (Integer) claims.get("userAdmin");
+//                request.setAttribute("userAdmin",userAdmin);
+//
+//                if(userDisable == null || userDisable.equals(EntityEnum.Disable.getValue())){
+//                    logger.info("GetInfo:["+uuid+"]"+ ResultEnum.USER_BAN.getMsg());
+//                    sendJsonMessage(response, JsonData.buildError(ResultEnum.USER_BAN.getCode(),ResultEnum.USER_BAN.getMsg()));
+//                    return false;
+//                }
 
                 return true;
             }
