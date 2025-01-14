@@ -3,7 +3,8 @@ package top.hxyac.chatbot.model;
 public enum GPTVersion {
 
     GPT35("gpt35"),
-    GPT40("gpt40");
+    GPT40("gpt40"),
+    GPT4O("gpt4O");
 
     private String version;
 

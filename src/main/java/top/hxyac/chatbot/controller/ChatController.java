@@ -35,9 +35,9 @@ public class ChatController {
     public JsonData flutterGetMessage(
                        @RequestBody promptMessage requestBody,
                        @RequestParam("chatUUID") String chatUUID,
-                       @RequestParam("userUUID") String userUUID,
+                       @RequestAttribute("uuid") String userUUID,
                        @RequestParam("gptVersion") String gptVersion){
-        logger.info("from wechat message - [chatUUID=[{}], userUUID=[{}], gptVersion=[{}],"
+        logger.info("from wechat message - [chatUUID=[{}], uuid=[{}], gptVersion=[{}],"
                         + "requestBody=[\n{}\n] ",
                 chatUUID,userUUID,gptVersion,requestBody);
 

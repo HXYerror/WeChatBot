@@ -40,11 +40,11 @@ public class RequestUtils {
 
     private final static String AZURE_API_KEY = "api-key";
 
-    private static String AZURE_OPEN_AI_GPT35;
+    private static String AZURE_OPEN_AI_GPT4_O;
     private static String AZURE_OPEN_AI_GPT4;
-    @Value("${hxyac.azure_gpt35}")
-    public void setAZURE_OPEN_AI_GPT35(String SECRET) {
-        RequestUtils.AZURE_OPEN_AI_GPT35 = SECRET;
+    @Value("${hxyac.azure_gpt4_O}")
+    public void setAZURE_OPEN_AI_GPT4_O(String SECRET) {
+        RequestUtils.AZURE_OPEN_AI_GPT4_O = SECRET;
     }
 
     @Value("${hxyac.azure_gpt40}")
@@ -86,16 +86,20 @@ public class RequestUtils {
 
 
         HttpHeaders headers = new HttpHeaders();
-        String RequestURL = AZURE_OPEN_AI_GPT35;
+        String RequestURL = AZURE_OPEN_AI_GPT4_O;
         String secret = AZURE_SECRET;
         switch (version){
             case GPT35:
-                RequestURL = AZURE_OPEN_AI_GPT35;
+                RequestURL = AZURE_OPEN_AI_GPT4_O;
                 secret = AZURE_SECRET;
                 break;
             case GPT40:
                 RequestURL = AZURE_OPEN_AI_GPT4;
                 secret = AZURE_GPT4_SECRET;
+                break;
+            case GPT4O:
+                RequestURL = AZURE_OPEN_AI_GPT4_O;
+                secret = AZURE_SECRET;
                 break;
         }
 

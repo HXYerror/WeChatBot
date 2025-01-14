@@ -171,7 +171,7 @@ public class ChatServiceImpl implements ChatService {
 
             Gpt35Request gpt35Request = new Gpt35Request();
             List<Gpt35Message> gpt35MessageList = new ArrayList();
-            Gpt35Message gpt35Message1 = new Gpt35Message("system", "You are an AI assistant that helps people find information.");
+            Gpt35Message gpt35Message1 = new Gpt35Message("system", "You are an assistant and you are a master in every area, you will answer questions and find information carefully.");
             gpt35MessageList.add(gpt35Message1);
 
             ArrayList<FlutterMessage> historyMessageList = (ArrayList)this.findUserChatHistory(userUUID,chatUUID,10);
@@ -190,9 +190,9 @@ public class ChatServiceImpl implements ChatService {
             gpt35Request.setMax_tokens(this.flutterMax);
             gpt35Request.setFrequency_penalty(0);
             gpt35Request.setTop_p(0.8);
-            gpt35Request.setTemperature(0.5);
+            gpt35Request.setTemperature(0.8);
 
-            Gpt35Response gpt35Response = this.requestUtils.getMessageFromAzureGPT35(gpt35Request, GPTVersion.GPT40 ,userUUID);
+            Gpt35Response gpt35Response = this.requestUtils.getMessageFromAzureGPT35(gpt35Request, GPTVersion.GPT4O ,userUUID);
             FlutterMessage flutterMessage = new FlutterMessage();
             flutterMessage.setBotMessage(((Gpt35RespChoices)gpt35Response.getChoices().get(0)).getMessage());
             flutterMessage.setUserMessage(gpt35Message2);
@@ -202,7 +202,7 @@ public class ChatServiceImpl implements ChatService {
             flutterMessage.setChatUUID(chatUUID);
             flutterMessage.setUserUUID(userUUID);
             flutterMessage.setEnable(true);
-            flutterMessage.setVersion(GPTVersion.GPT40);
+            flutterMessage.setVersion(GPTVersion.GPT4O);
 
             this.mongoTemplate.save(flutterMessage, "flutter_chat_history");
             long endTime = System.currentTimeMillis();
